@@ -94,3 +94,40 @@ export const getEmployeeHistory=async(req,res)=>{
         return res.status(500).json({message:"Internal error in fetching employee history"});
     }
 }
+export const getEmployeePerformance=async(req,res)=>{
+    try{
+        const{data,error}=await supabase
+            .from("deliveries")
+            .select("status")
+            .eq("employee",req.params.id);
+
+        if (error) {
+            throw error;
+        }
+
+        const totalCancelled=data.filter(d=>d.status==="cancelled").length;
+        const totalAssigned=data.length-totalCancelled;
+        const totalDelivered=data.filter(d=>d.status==="delivered").length;
+
+        const pendingDeliveries=data.filter(
+            d=>[
+                "pending",
+                "assigned",
+                "in transit",
+                "out for delivery"
+            ].includes(d.status)
+        ).length;
+
+        return res.status(200).json({
+            employeeId:req.params.id,
+            totalAssigned,
+            totalDelivered,
+            pendingDeliveries
+        });
+
+    } 
+    catch(error){
+        console.log(`Error in fetching employee performacne:${error}`);
+        return res.status(500).json({message:"Internal error in fetching employee performance"});
+    }
+};
