@@ -1,4 +1,30 @@
 import supabase from "../config/supabase.js"
+import { withClientId } from "../utils/serialize.js"
+import { PARCEL_STATUSES, ACTIVE_STATUSES } from "../utils/statuses.js"
+
+// Loads a delivery and checks the caller is an admin or the assigned employee.
+// Returns the delivery, or sends the 404/403 response itself and returns null.
+const loadAuthorizedDelivery = async (req, res, columns) => {
+    const {data,error}=await supabase
+        .from("deliveries")
+        .select(`employee, ${columns}`)
+        .eq("id",req.params.id)
+        .maybeSingle();
+
+    if(error){
+        throw error;
+    }
+    if(!data){
+        res.status(404).json({message:"Delivery not found"});
+        return null;
+    }
+    if(req.user.role!=="admin" && String(data.employee)!==String(req.user.id)){
+        res.status(403).json({message:"Access denied"});
+        return null;
+    }
+    return data;
+}
+
 export const getDeliveries=async(req,res)=>{
     try{
         const {data,error}=await supabase
@@ -10,7 +36,7 @@ export const getDeliveries=async(req,res)=>{
             throw error;
         }
 
-        return res.status(200).json(data);
+        return res.status(200).json(data.map(withClientId));
     }
     catch(error){
         console.log(`Error in fetching deliveries:${error}`);
@@ -19,18 +45,26 @@ export const getDeliveries=async(req,res)=>{
 }
 export const getDeliveriesToday=async(req,res)=>{
     try{
-        const today = new Date().toISOString().split("T")[0];
+        // FIX: .eq("assigned_at", today) never matches a timestamp column.
+        // Compare against the whole day instead. Optional ?date=YYYY-MM-DD (UTC day).
+        const day = /^\d{4}-\d{2}-\d{2}$/.test(req.query.date || "")
+            ? req.query.date
+            : new Date().toISOString().split("T")[0];
+        const start = `${day}T00:00:00.000Z`;
+        const end = new Date(new Date(start).getTime() + 24 * 60 * 60 * 1000).toISOString();
+
         const {data,error}=await supabase
         .from("deliveries")
         .select("*")
         .eq("employee",req.params.id)
-        .eq("assigned_at",today);
+        .gte("assigned_at",start)
+        .lt("assigned_at",end);
 
         if(error){
             throw error;
         }
 
-        return res.status(200).json(data);
+        return res.status(200).json(data.map(withClientId));
     }
     catch(error){
         console.log(`Error in fetching today's deliveries:${error}`);
@@ -39,17 +73,9 @@ export const getDeliveriesToday=async(req,res)=>{
 }
 export const getDeliveryStatus=async(req,res)=>{
     try{
-        const {data,error}=await supabase
-        .from("deliveries")
-        .select("status")
-        .eq("id",req.params.id)
-        .single();
-
-        if(error){
-            throw error;
-        }
-
-        return res.status(200).json(data);
+        const delivery = await loadAuthorizedDelivery(req,res,"status");
+        if(!delivery) return;
+        return res.status(200).json({status:delivery.status});
     }
     catch(error){
         console.log(`Error in fetching delivery status:${error}`);
@@ -58,17 +84,9 @@ export const getDeliveryStatus=async(req,res)=>{
 }
 export const getDeliveryPriority=async(req,res)=>{
     try{
-        const {data,error}=await supabase
-        .from("deliveries")
-        .select("priority")
-        .eq("id",req.params.id)
-        .single();
-
-        if(error){
-            throw error;
-        }
-
-        return res.status(200).json(data);
+        const delivery = await loadAuthorizedDelivery(req,res,"priority");
+        if(!delivery) return;
+        return res.status(200).json({priority:delivery.priority});
     }
     catch(error){
         console.log(`Error in fetching delivery priority:${error}`);
@@ -81,13 +99,13 @@ export const getEmployeeHistory=async(req,res)=>{
         .from("deliveries")
         .select("*")
         .eq("employee",req.params.id)
-        .eq("status","delivered");
+        .eq("status",PARCEL_STATUSES.DELIVERED);
 
         if(error){
             throw error;
         }
 
-        return res.status(200).json(data);
+        return res.status(200).json(data.map(withClientId));
     }
     catch(error){
         console.log(`Error in fetching employee history:${error}`);
@@ -105,29 +123,28 @@ export const getEmployeePerformance=async(req,res)=>{
             throw error;
         }
 
-        const totalCancelled=data.filter(d=>d.status==="cancelled").length;
+        // FIX: status names now match the rest of the app (the old code looked for
+        // "in transit" / "out for delivery", which never matched "in_transit" etc.)
+        const totalCancelled=data.filter(d=>d.status===PARCEL_STATUSES.CANCELLED).length;
         const totalAssigned=data.length-totalCancelled;
-        const totalDelivered=data.filter(d=>d.status==="delivered").length;
-
-        const pendingDeliveries=data.filter(
-            d=>[
-                "pending",
-                "assigned",
-                "in transit",
-                "out for delivery"
-            ].includes(d.status)
-        ).length;
+        const totalDelivered=data.filter(d=>d.status===PARCEL_STATUSES.DELIVERED).length;
+        const totalFailed=data.filter(d=>d.status===PARCEL_STATUSES.FAILED).length;
+        const pendingDeliveries=data.filter(d=>ACTIVE_STATUSES.includes(d.status)).length;
+        const finished=totalDelivered+totalFailed;
+        const successRate=finished===0?0:Math.round((totalDelivered/finished)*100);
 
         return res.status(200).json({
             employeeId:req.params.id,
             totalAssigned,
             totalDelivered,
-            pendingDeliveries
+            totalFailed,
+            pendingDeliveries,
+            successRate
         });
 
-    } 
+    }
     catch(error){
-        console.log(`Error in fetching employee performacne:${error}`);
+        console.log(`Error in fetching employee performance:${error}`);
         return res.status(500).json({message:"Internal error in fetching employee performance"});
     }
 };

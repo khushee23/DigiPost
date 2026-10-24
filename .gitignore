@@ -23,3 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 node_modules/
+
+# Environment files (never commit secrets)
+.env
+.env.local
+!.env.example

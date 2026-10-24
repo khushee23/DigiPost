@@ -2,6 +2,8 @@ import React from 'react';
 import { Package, Mail, Phone, MapPin, Shield, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+const CURRENT_YEAR = new Date().getFullYear();
+
 export const Footer = () => {
   return (
     <footer className="bg-[#111111] text-neutral-300 pt-16 pb-12 border-t border-neutral-800">
@@ -102,10 +104,10 @@ export const Footer = () => {
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-500">
-          <p>© {new Date().getFullYear()} Post Office Automation System. All rights reserved.</p>
+          <p>© {CURRENT_YEAR} Post Office Automation System. All rights reserved.</p>
           <div className="flex items-center gap-6">
             <span>Third-Year Software Engineering Project</span>
-            <span>MERN Stack Architecture</span>
+            <span>React + Express + Supabase</span>
           </div>
         </div>
       </div>
