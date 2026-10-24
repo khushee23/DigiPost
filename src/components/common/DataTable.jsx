@@ -25,13 +25,7 @@ export const DataTable = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100">
-            {isLoading ? (
-              <tr>
-                <td colSpan={columns.length} className="px-4.5 py-12 text-center text-sm text-neutral-500">
-                  Loading...
-                </td>
-              </tr>
-            ) : data.length === 0 ? (
+            {data.length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="p-0">
                   <EmptyState description={emptyMessage} className="border-0 rounded-none py-12" />

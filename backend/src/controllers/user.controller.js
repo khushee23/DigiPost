@@ -1,23 +1,15 @@
 import supabase from "../config/supabase.js"
-import { withClientId } from "../utils/serialize.js"
-
-// Never select("*") on users: it would also return the password hash.
-const USER_COLUMNS = "id, name, email, phone, address, role, status, station, created_at"
-
-// Fields an admin may change through PATCH /users/:id (passwords go through /auth/change-password)
-const UPDATABLE_FIELDS = ["name", "email", "phone", "address", "role", "status", "station"]
-
 export const getUsers=async(req,res)=>{
     try{
         const {data,error}=await supabase
         .from("users")
-        .select(USER_COLUMNS);
+        .select("*");
 
         if(error){
             throw error;
         }
 
-        return res.status(200).json(data.map(withClientId));
+        return res.status(200).json(data);
     }
     catch(error){
         console.log(`Error in fetching user:${error}`);
@@ -28,17 +20,17 @@ export const getUserById=async(req,res)=>{
     try{
         const {data,error}=await supabase
         .from("users")
-        .select(USER_COLUMNS)
+        .select("*")
         .eq("id",req.params.id)
-        .maybeSingle();
+        .single();
 
         if(error){
+            if (error.code==="PGRST116"){
+                return res.status(404).json({message:"User not found"});
+            }
             throw error;
         }
-        if(!data){
-            return res.status(404).json({message:"User not found"});
-        }
-        return res.status(200).json(withClientId(data));
+        return res.status(200).json(data);
     }
     catch(error){
         console.log(`Error in fetching user by id:${error}`);
@@ -47,28 +39,20 @@ export const getUserById=async(req,res)=>{
 }
 export const updateUserById=async(req,res)=>{
     try{
-        const updates = {};
-        for (const field of UPDATABLE_FIELDS) {
-            if (req.body[field] !== undefined) updates[field] = req.body[field];
-        }
-        if (Object.keys(updates).length === 0) {
-            return res.status(400).json({message:"No valid fields to update"});
-        }
-
         const {data,error}=await supabase
         .from("users")
-        .update(updates)
+        .update(req.body)
         .eq("id",req.params.id)
-        .select(USER_COLUMNS)
-        .maybeSingle();
+        .select("*")
+        .single();
 
         if(error){
+            if (error.code==="PGRST116"){
+                return res.status(404).json({message:"User not found"});
+            }
             throw error;
         }
-        if(!data){
-            return res.status(404).json({message:"User not found"});
-        }
-        return res.status(200).json(withClientId(data));
+        return res.status(200).json(data);
     }
     catch(error){
         console.log(`Error in updating user:${error}`);
@@ -81,14 +65,14 @@ export const deleteUser=async(req,res)=>{
         .from("users")
         .delete()
         .eq("id",req.params.id)
-        .select("id")
-        .maybeSingle();
-
+        .select("*")
+        .single();
+    
         if(error){
+            if (error.code==="PGRST116"){
+                return res.status(404).json({message:"User not found"});
+            }
             throw error;
-        }
-        if(!data){
-            return res.status(404).json({message:"User not found"});
         }
         return res.status(200).json({message:"User deleted successfully"});
     }

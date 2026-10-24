@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Package, Menu, X, ArrowRight, User, LogOut } from 'lucide-react';
+import { Mail, Package, Menu, X, ArrowRight, User, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../common/Button';
 
