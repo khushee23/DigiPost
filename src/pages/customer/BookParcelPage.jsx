@@ -21,10 +21,10 @@ export const BookParcelPage = () => {
   const [sender, setSender] = useState({
     name: user?.name || '',
     phone: user?.phone || '',
-    address: user?.address || '742 Evergreen Terrace',
-    city: 'Springfield',
-    state: 'IL',
-    postalCode: '62704',
+    address: 'Fort Area, near General Post Office',
+    city: 'Mumbai',
+    state: 'Maharashtra',
+    postalCode: '400001',
     email: user?.email || '',
   });
 
@@ -56,8 +56,8 @@ export const BookParcelPage = () => {
     fragile: 25,
     heavy: 35,
   };
-  const weightNum = Math.max(0.1, parseFloat(parcelDetails.weight) || 1);
-  const estimatedCost = (baseRates[parcelDetails.parcelType] || 12) + weightNum * 4.5;
+  const weightNum = Math.max(0.5, parseFloat(parcelDetails.weight) || 1);
+  const estimatedCost = (baseRates[parcelDetails.parcelType] || 15) + weightNum * 4.5;
   const estimatedDays = parcelDetails.parcelType === 'express' ? '1-2 Days' : '3-5 Days';
 
   const handleSenderChange = (e) => {
@@ -183,7 +183,7 @@ export const BookParcelPage = () => {
                     required
                   />
                   <Input
-                    label="Postal Code"
+                    label="PIN Code"
                     name="postalCode"
                     value={sender.postalCode}
                     onChange={handleSenderChange}
@@ -209,7 +209,7 @@ export const BookParcelPage = () => {
                 <Input
                   label="Recipient Full Name"
                   name="name"
-                  placeholder="e.g. Michael Scott"
+                  placeholder="e.g. Asha Sharma"
                   value={receiver.name}
                   onChange={handleReceiverChange}
                   icon={User}
@@ -218,7 +218,7 @@ export const BookParcelPage = () => {
                 <Input
                   label="Recipient Phone Number"
                   name="phone"
-                  placeholder="+1 (555) 349-2049"
+                  placeholder="+91 98765 43210"
                   value={receiver.phone}
                   onChange={handleReceiverChange}
                   icon={Phone}
@@ -228,7 +228,7 @@ export const BookParcelPage = () => {
                   <Input
                     label="Recipient Street Address"
                     name="address"
-                    placeholder="1725 Slough Avenue, Suite 200"
+                    placeholder="12 FC Road, near Deccan Gymkhana"
                     value={receiver.address}
                     onChange={handleReceiverChange}
                     icon={MapPin}
@@ -238,7 +238,7 @@ export const BookParcelPage = () => {
                 <Input
                   label="Destination City"
                   name="city"
-                  placeholder="Scranton"
+                  placeholder="Pune"
                   value={receiver.city}
                   onChange={handleReceiverChange}
                   required
@@ -247,15 +247,15 @@ export const BookParcelPage = () => {
                   <Input
                     label="State"
                     name="state"
-                    placeholder="PA"
+                    placeholder="Maharashtra"
                     value={receiver.state}
                     onChange={handleReceiverChange}
                     required
                   />
                   <Input
-                    label="Postal Code"
+                    label="PIN Code"
                     name="postalCode"
-                    placeholder="18503"
+                    placeholder="411004"
                     value={receiver.postalCode}
                     onChange={handleReceiverChange}
                     required
@@ -266,7 +266,7 @@ export const BookParcelPage = () => {
                     label="Recipient Email (Optional notification)"
                     name="email"
                     type="email"
-                    placeholder="michael@example.com"
+                    placeholder="recipient@example.com"
                     value={receiver.email}
                     onChange={handleReceiverChange}
                   />
@@ -301,7 +301,7 @@ export const BookParcelPage = () => {
                   name="weight"
                   type="number"
                   step="0.1"
-                  min="0.1"
+                  min="0.5"
                   max="70"
                   value={parcelDetails.weight}
                   onChange={handleParcelChange}
@@ -313,7 +313,7 @@ export const BookParcelPage = () => {
                     label="Contents Description & Special Instructions"
                     name="description"
                     rows={3}
-                    placeholder="e.g. Legal documents, fragile porcelain, or electronic equipment..."
+                    placeholder="e.g. Documents, clothing, books, or small electronics"
                     value={parcelDetails.description}
                     onChange={handleParcelChange}
                   />

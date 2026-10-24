@@ -1,6 +1,7 @@
 import React, { forwardRef } from 'react';
 
 export const Select = forwardRef(({
+  id,
   label,
   name,
   value,
@@ -14,17 +15,19 @@ export const Select = forwardRef(({
   className = '',
   ...props
 }, ref) => {
+  const inputId = id || name;
+
   return (
     <div className={`w-full ${className}`}>
       {label && (
-        <label htmlFor={name} className="block text-sm font-medium text-neutral-800 mb-1.5">
+        <label htmlFor={inputId} className="block text-sm font-medium text-neutral-800 mb-1.5">
           {label} {required && <span className="text-[#D71920]">*</span>}
         </label>
       )}
       <div className="relative rounded-lg shadow-xs">
         <select
           ref={ref}
-          id={name}
+          id={inputId}
           name={name}
           value={value}
           onChange={onChange}

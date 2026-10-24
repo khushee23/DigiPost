@@ -76,7 +76,7 @@ export const ReportsAnalyticsPage = () => {
     <div className="space-y-8 animate-fade-in pb-16 print:p-0">
       <PageHeader
         title="Postal Reports & Operations Analytics"
-        subtitle="Quarterly throughput, delivery success metrics, and financial consignment summaries."
+        subtitle="Live parcel volumes, delivery outcomes, and estimated postage charges."
         actions={
           <Button variant="outline" size="sm" icon={Printer} onClick={handlePrint}>
             Print Executive Summary
@@ -98,16 +98,16 @@ export const ReportsAnalyticsPage = () => {
           colorScheme="default"
         />
         <StatCard
-          title="On-Time Completion Rate"
-          value={`${stats?.totalParcels ? (((stats.completedDeliveries) / Math.max(1, stats.completedDeliveries + stats.failedDeliveries)) * 100).toFixed(1) : 98.4}%`}
-          subtitle="Doorstep success metric"
+          title="Delivery Success Rate"
+          value={`${stats?.deliverySuccessRate ?? 0}%`}
+          subtitle="Delivered ÷ completed attempts"
           icon={CheckCircle2}
           colorScheme="green"
         />
         <StatCard
-          title="Gross Postage Value"
+          title="Estimated Postage Charges"
           value={formatCurrency(stats?.totalRevenue ?? 0)}
-          subtitle="Freight revenue"
+          subtitle="Sum of charges on all parcels"
           icon={DollarSign}
           colorScheme="red"
         />
@@ -130,7 +130,7 @@ export const ReportsAnalyticsPage = () => {
             <p className="text-xs text-neutral-400">Total consignments booked alongside revenue</p>
           </div>
           <span className="text-xs font-semibold px-2.5 py-1 bg-neutral-100 text-neutral-700 rounded-lg">
-            Fiscal Year 2026
+            Last 6 Months
           </span>
         </div>
 
@@ -150,6 +150,10 @@ export const ReportsAnalyticsPage = () => {
               <XAxis dataKey="month" stroke="#888" fontSize={12} />
               <YAxis stroke="#888" fontSize={12} />
               <Tooltip
+                formatter={(value, name) => [
+                  String(name).toLowerCase().includes('postage') ? formatCurrency(value) : value,
+                  name,
+                ]}
                 contentStyle={{
                   backgroundColor: '#1C1C1C',
                   borderColor: '#333',
@@ -162,7 +166,7 @@ export const ReportsAnalyticsPage = () => {
               <Area
                 type="monotone"
                 dataKey="revenue"
-                name="Postage Revenue ($)"
+                name="Estimated Postage (₹)"
                 stroke="#D71920"
                 strokeWidth={2}
                 fillOpacity={1}
@@ -195,8 +199,8 @@ export const ReportsAnalyticsPage = () => {
               <BarChart data={stats?.weeklyVolume || []}>
                 <XAxis dataKey="day" stroke="#888" fontSize={11} />
                 <YAxis stroke="#888" fontSize={11} />
-                <Tooltip
-                  contentStyle={{
+                  <Tooltip
+                    contentStyle={{
                     backgroundColor: '#1C1C1C',
                     borderColor: '#333',
                     borderRadius: '8px',

@@ -11,6 +11,8 @@ import { LandingPage } from '../pages/public/LandingPage';
 import { LoginPage } from '../pages/public/LoginPage';
 import { RegisterPage } from '../pages/public/RegisterPage';
 import { TrackParcelPage } from '../pages/public/TrackParcelPage';
+import { ServicesPage } from '../pages/public/ServicesPage';
+import { HowItWorksPage } from '../pages/public/HowItWorksPage';
 import { UnauthorizedPage } from '../pages/public/UnauthorizedPage';
 import { NotFoundPage } from '../pages/public/NotFoundPage';
 
@@ -44,15 +46,44 @@ import { ComplaintManagementPage } from '../pages/admin/ComplaintManagementPage'
 import { ReportsAnalyticsPage } from '../pages/admin/ReportsAnalyticsPage';
 import { AdminProfilePage } from '../pages/admin/AdminProfilePage';
 
+import { useAuth } from '../context/AuthContext';
+
+// Dynamic Role-based Dashboard Redirector
+const RoleDashboardRedirect = () => {
+  const { user } = useAuth();
+  const effectiveUser = user || (() => {
+    try {
+      const stored = localStorage.getItem('poas_auth_user');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  })();
+
+  if (!effectiveUser) {
+    return <Navigate to="/login" replace />;
+  }
+
+  const role = (effectiveUser.role || 'customer').toString().toLowerCase();
+  if (role === 'admin') return <Navigate to="/admin/dashboard" replace />;
+  if (role === 'employee') return <Navigate to="/employee/dashboard" replace />;
+  return <Navigate to="/customer/dashboard" replace />;
+};
+
 export const AppRoutes = () => {
   return (
     <Routes>
+      {/* Universal Dashboard Dynamic Redirect */}
+      <Route path="/dashboard" element={<RoleDashboardRedirect />} />
+
       {/* Public Pages with PublicLayout (Navbar & Footer) */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/track" element={<TrackParcelPage />} />
+        <Route path="/services" element={<ServicesPage />} />
+        <Route path="/how-it-works" element={<HowItWorksPage />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
       </Route>
 

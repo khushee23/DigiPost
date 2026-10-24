@@ -3,12 +3,72 @@ import { getMockData } from './mockData';
 
 const delay = (ms = 200) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const getIndiaDateParts = (date) => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  return Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+};
+
+const getIndiaDateKey = (date) => {
+  const { year, month, day } = getIndiaDateParts(date);
+  return `${year}-${month}-${day}`;
+};
+
+const getMockVolumeStats = (parcels, now = new Date()) => {
+  const todayParts = getIndiaDateParts(now);
+  const today = new Date(Date.UTC(Number(todayParts.year), Number(todayParts.month) - 1, Number(todayParts.day)));
+  const mondayOffset = (today.getUTCDay() + 6) % 7;
+  const weekStart = new Date(today);
+  weekStart.setUTCDate(weekStart.getUTCDate() - mondayOffset);
+  const weeklyVolume = Array.from({ length: 7 }, (_, index) => {
+    const day = new Date(weekStart);
+    day.setUTCDate(day.getUTCDate() + index);
+    const key = getIndiaDateKey(day);
+    return {
+      day: new Intl.DateTimeFormat('en-IN', { weekday: 'short', timeZone: 'UTC' }).format(day),
+      bookings: parcels.filter((parcel) => {
+        const date = new Date(parcel.bookingDate || parcel.booking_date);
+        return !Number.isNaN(date.getTime()) && getIndiaDateKey(date) === key;
+      }).length,
+      delivered: parcels.filter((parcel) => {
+        const event = (parcel.history || []).find((item) => item.status === 'DELIVERED');
+        const date = parcel.deliveredDate || parcel.delivered_date || event?.timestamp;
+        const parsedDate = date ? new Date(date) : null;
+        return parsedDate && !Number.isNaN(parsedDate.getTime()) && getIndiaDateKey(parsedDate) === key;
+      }).length,
+    };
+  });
+
+  const firstMonth = new Date(Date.UTC(Number(todayParts.year), Number(todayParts.month) - 6, 1));
+  const monthlyVolume = Array.from({ length: 6 }, (_, index) => {
+    const start = new Date(Date.UTC(firstMonth.getUTCFullYear(), firstMonth.getUTCMonth() + index, 1));
+    const end = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 1));
+    const monthlyParcels = parcels.filter((parcel) => {
+      const date = new Date(parcel.bookingDate || parcel.booking_date);
+      return !Number.isNaN(date.getTime()) &&
+        getIndiaDateKey(date) >= getIndiaDateKey(start) &&
+        getIndiaDateKey(date) < getIndiaDateKey(end);
+    });
+    return {
+      month: new Intl.DateTimeFormat('en-IN', { month: 'short', timeZone: 'UTC' }).format(start),
+      parcels: monthlyParcels.length,
+      revenue: Number(monthlyParcels.reduce((sum, parcel) => sum + (Number(parcel.cost) || 0), 0).toFixed(2)),
+    };
+  });
+
+  return { weeklyVolume, monthlyVolume };
+};
+
 export const analyticsService = {
   // Get overview metrics and dashboard charts
   getAdminStats: async () => {
     if (USE_MOCK_API) {
       await delay();
-      const { users, parcels, deliveries, complaints } = getMockData();
+      const { users, parcels, complaints } = getMockData();
 
       const customers = users.filter((u) => u.role === 'customer');
       const employees = users.filter((u) => u.role === 'employee');
@@ -18,38 +78,21 @@ export const analyticsService = {
       const inTransitDeliveries = parcels.filter((p) => p.status === 'IN_TRANSIT' || p.status === 'OUT_FOR_DELIVERY').length;
       const completedDeliveries = parcels.filter((p) => p.status === 'DELIVERED').length;
       const failedDeliveries = parcels.filter((p) => p.status === 'FAILED').length;
+      const cancelledDeliveries = parcels.filter((p) => p.status === 'CANCELLED').length;
 
       const totalRevenue = parcels.reduce((sum, p) => sum + (p.cost || 0), 0);
       const openComplaints = complaints.filter((c) => c.status === 'OPEN' || c.status === 'IN_PROGRESS').length;
+      const attempts = completedDeliveries + failedDeliveries;
 
-      // Status breakdown for Pie Chart
       const statusDistribution = [
         { name: 'Delivered', value: completedDeliveries, color: '#16803C' },
         { name: 'In Transit', value: inTransitDeliveries, color: '#6366F1' },
         { name: 'Pending / Assigned', value: pendingDeliveries, color: '#D97706' },
         { name: 'Failed', value: failedDeliveries, color: '#DC2626' },
+        { name: 'Cancelled', value: cancelledDeliveries, color: '#737373' },
       ];
 
-      // Weekly volume trends
-      const weeklyVolume = [
-        { day: 'Mon', bookings: 12, delivered: 9 },
-        { day: 'Tue', bookings: 18, delivered: 14 },
-        { day: 'Wed', bookings: 15, delivered: 12 },
-        { day: 'Thu', bookings: 22, delivered: 19 },
-        { day: 'Fri', bookings: 28, delivered: 24 },
-        { day: 'Sat', bookings: 16, delivered: 15 },
-        { day: 'Sun', bookings: 8, delivered: 7 },
-      ];
-
-      // Monthly parcel volume
-      const monthlyVolume = [
-        { month: 'May', parcels: 340, revenue: 8400 },
-        { month: 'Jun', parcels: 410, revenue: 10200 },
-        { month: 'Jul', parcels: 390, revenue: 9800 },
-        { month: 'Aug', parcels: 480, revenue: 12100 },
-        { month: 'Sep', parcels: 520, revenue: 13400 },
-        { month: 'Oct', parcels: totalParcels * 15 + 120, revenue: totalRevenue * 12 + 2500 },
-      ];
+      const { weeklyVolume, monthlyVolume } = getMockVolumeStats(parcels);
 
       return {
         success: true,
@@ -61,7 +104,9 @@ export const analyticsService = {
           inTransitDeliveries,
           completedDeliveries,
           failedDeliveries,
+          cancelledDeliveries,
           totalRevenue,
+          deliverySuccessRate: attempts ? Number(((completedDeliveries / attempts) * 100).toFixed(1)) : 0,
           openComplaints,
           statusDistribution,
           weeklyVolume,

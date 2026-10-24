@@ -1,0 +1,150 @@
+{
+  "users": [
+    {
+      "id": "15557f56-f549-4bf5-b43d-e02a5e99a093",
+      "name": "Victoria Stirling",
+      "email": "admin@postoffice.gov",
+      "password": "$2b$10$FZy77G3Dbn91KaeiDCqcxe8DDPXtcKdaepTQIue6zgLRAiPlq/y36",
+      "phone": "+1 (555) 019-2831",
+      "address": "Postal HQ Command, 100 Federal Plaza",
+      "role": "admin",
+      "station": "Headquarters - Central Command",
+      "status": "active",
+      "created_at": "2026-10-24T17:33:50.185853+00:00",
+      "updated_at": "2026-10-24T17:33:50.185853+00:00",
+      "_id": "15557f56-f549-4bf5-b43d-e02a5e99a093"
+    },
+    {
+      "id": "61372ae5-fb92-4e4c-9ce0-cf1f3ea1f9e9",
+      "name": "John Carrier",
+      "email": "employee@postoffice.gov",
+      "password": "$2b$10$AzgPgOJYzcGBL4OyPJia2eAxyDQqwzMRjq6QJ8oQQC2Ax0nwSF1Kq",
+      "phone": "+1 (555) 234-5678",
+      "address": "Distribution Branch 01",
+      "role": "employee",
+      "station": "Central Sorting Hub 01",
+      "status": "active",
+      "created_at": "2026-10-24T17:33:50.185853+00:00",
+      "updated_at": "2026-10-24T17:33:50.185853+00:00",
+      "_id": "61372ae5-fb92-4e4c-9ce0-cf1f3ea1f9e9"
+    },
+    {
+      "id": "b34816a6-1707-49d1-aed7-fe8627b58fa8",
+      "name": "Sarah Jenkins",
+      "email": "sarah.customer@gmail.com",
+      "password": "$2b$10$omZjbbaKHUi55nMi3rcusuA.Glpvq9gToSuQ.C5AF2ClDz2DVGWzG",
+      "phone": "+1 (555) 912-3456",
+      "address": "742 Evergreen Terrace, Springfield, IL 62704",
+      "role": "customer",
+      "station": null,
+      "status": "active",
+      "created_at": "2026-10-24T17:33:50.185853+00:00",
+      "updated_at": "2026-10-24T17:33:50.185853+00:00",
+      "_id": "b34816a6-1707-49d1-aed7-fe8627b58fa8"
+    }
+  ],
+  "parcels": [
+    {
+      "id": "33d4796e-61a9-4cab-8e93-df161b7ae463",
+      "tracking_id": "PO-98231019",
+      "sender": {
+        "name": "Sarah Jenkins",
+        "email": "sarah.customer@gmail.com",
+        "phone": "+1 (555) 912-3456",
+        "address": "742 Evergreen Terrace, Springfield, IL 62704"
+      },
+      "customer_id": "b34816a6-1707-49d1-aed7-fe8627b58fa8",
+      "sender_details": {
+        "name": "Sarah Jenkins",
+        "email": "sarah.customer@gmail.com",
+        "phone": "+1 (555) 912-3456",
+        "address": "742 Evergreen Terrace, Springfield, IL 62704"
+      },
+      "receiver": {
+        "city": "New York",
+        "name": "Emma Watson",
+        "phone": "+1 (555) 678-1234",
+        "state": "NY",
+        "address": "450 Lexington Ave"
+      },
+      "origin": "Springfield, IL",
+      "destination": "New York, NY",
+      "parcel_type": "standard",
+      "weight": 1.2,
+      "description": "Gift box",
+      "cost": 16,
+      "status": "DELIVERED",
+      "assigned_to": null,
+      "booking_date": "2026-10-17T17:33:50.185853+00:00",
+      "expected_delivery_date": null,
+      "delivered_date": null,
+      "failure_reason": null,
+      "history": [],
+      "created_at": "2026-10-24T17:33:50.185853+00:00",
+      "updated_at": "2026-10-24T17:33:50.185853+00:00",
+      "_id": "33d4796e-61a9-4cab-8e93-df161b7ae463",
+      "trackingId": "PO-98231019",
+      "customerId": "b34816a6-1707-49d1-aed7-fe8627b58fa8",
+      "senderId": "b34816a6-1707-49d1-aed7-fe8627b58fa8",
+      "parcelType": "standard",
+      "bookingDate": "2026-10-17T17:33:50.185853+00:00",
+      "expectedDeliveryDate": null,
+      "deliveredDate": null,
+      "failureReason": null,
+      "assignedTo": null
+    },
+    {
+      "id": "350103fe-5a69-4d2f-bacb-a1a8cec12680",
+      "tracking_id": "PO-84920184",
+      "sender": {
+        "name": "Sarah Jenkins",
+        "email": "sarah.customer@gmail.com",
+        "phone": "+1 (555) 912-3456",
+        "address": "742 Evergreen Terrace, Springfield, IL 62704"
+      },
+      "customer_id": "b34816a6-1707-49d1-aed7-fe8627b58fa8",
+      "sender_details": {
+        "name": "Sarah Jenkins",
+        "email": "sarah.customer@gmail.com",
+        "phone": "+1 (555) 912-3456",
+        "address": "742 Evergreen Terrace, Springfield, IL 62704"
+      },
+      "receiver": {
+        "city": "Scranton",
+        "name": "Michael Scott",
+        "phone": "+1 (555) 349-2049",
+        "state": "PA",
+        "address": "1725 Slough Ave"
+      },
+      "origin": "Springfield, IL",
+      "destination": "Scranton, PA",
+      "parcel_type": "express",
+      "weight": 2.5,
+      "description": "Confidential contracts",
+      "cost": 33.25,
+      "status": "OUT_FOR_DELIVERY",
+      "assigned_to": null,
+      "booking_date": "2026-10-21T17:33:50.185853+00:00",
+      "expected_delivery_date": null,
+      "delivered_date": null,
+      "failure_reason": null,
+      "history": [],
+      "created_at": "2026-10-24T17:33:50.185853+00:00",
+      "updated_at": "2026-10-24T17:33:50.185853+00:00",
+      "_id": "350103fe-5a69-4d2f-bacb-a1a8cec12680",
+      "trackingId": "PO-84920184",
+      "customerId": "b34816a6-1707-49d1-aed7-fe8627b58fa8",
+      "senderId": "b34816a6-1707-49d1-aed7-fe8627b58fa8",
+      "parcelType": "express",
+      "bookingDate": "2026-10-21T17:33:50.185853+00:00",
+      "expectedDeliveryDate": null,
+      "deliveredDate": null,
+      "failureReason": null,
+      "assignedTo": null
+    }
+  ],
+  "deliveries": [],
+  "complaints": [],
+  "reviews": [],
+  "notifications": []
+}

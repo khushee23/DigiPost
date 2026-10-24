@@ -29,20 +29,22 @@ export const EmployeeDashboard = () => {
   const [error, setError] = useState(null);
 
   const loadData = async () => {
-    if (!user?._id) return;
+    const courierId = user?._id || user?.id;
+    if (!courierId) return;
     try {
       setIsLoading(true);
       setError(null);
 
-      const [statsRes, delivRes] = await Promise.all([
-        analyticsService.getEmployeeStats(user._id),
-        deliveryService.getAssignedDeliveries(user._id),
+      const results = await Promise.allSettled([
+        analyticsService.getEmployeeStats(courierId),
+        deliveryService.getAssignedDeliveries(courierId),
       ]);
 
-      if (statsRes.success) setStats(statsRes.stats);
-      if (delivRes.success) {
-        // Prioritize active (assigned, in transit, out for delivery)
-        const active = delivRes.deliveries.filter((d) =>
+      if (results[0].status === 'fulfilled' && results[0].value?.success) {
+        setStats(results[0].value.stats);
+      }
+      if (results[1].status === 'fulfilled' && results[1].value?.success) {
+        const active = (results[1].value.deliveries || []).filter((d) =>
           ['ASSIGNED', 'IN_TRANSIT', 'OUT_FOR_DELIVERY'].includes(d.status)
         );
         setActiveDeliveries(active);
@@ -57,7 +59,7 @@ export const EmployeeDashboard = () => {
 
   useEffect(() => {
     loadData();
-  }, [user?._id]);
+  }, [user?._id, user?.id]);
 
   if (isLoading) {
     return (
@@ -75,18 +77,24 @@ export const EmployeeDashboard = () => {
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
-      {/* Banner / Header */}
+      {/* Banner / Header with Prominent Role Badge */}
       <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-2xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-neutral-400">
-            <Building2 className="w-3.5 h-3.5 text-[#D71920]" />
-            <span>{user?.station || 'Central Sorting Hub 01'}</span>
+          <div className="flex flex-wrap items-center gap-2 mb-1.5">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+              Role: Postal Employee & Courier
+            </span>
+            <div className="flex items-center gap-1 text-xs font-semibold text-neutral-500">
+              <Building2 className="w-3.5 h-3.5 text-[#D71920]" />
+              <span>{user?.station || 'Central Sorting Hub 01'}</span>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold text-neutral-900 mt-0.5">
+          <h1 className="text-2xl font-bold text-neutral-900">
             Courier Duty Desk: {user?.name || 'Courier'}
           </h1>
           <p className="text-xs text-neutral-500 mt-1">
-            Manage your daily delivery manifest and report status checkpoints.
+            Active field terminal for assigned dispatches, transit scans, and doorstep delivery confirmations.
           </p>
         </div>
 

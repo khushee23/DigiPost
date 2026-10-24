@@ -10,9 +10,9 @@ export const Navbar = () => {
   const navigate = useNavigate();
 
   const handleDashboardRedirect = () => {
-    if (!user) return;
-    if (user.role === 'admin') navigate('/admin/dashboard');
-    else if (user.role === 'employee') navigate('/employee/dashboard');
+    const role = (user?.role || '').toString().toLowerCase();
+    if (role === 'admin') navigate('/admin/dashboard');
+    else if (role === 'employee') navigate('/employee/dashboard');
     else navigate('/customer/dashboard');
   };
 
@@ -43,12 +43,12 @@ export const Navbar = () => {
             <Link to="/track" className="hover:text-[#D71920] transition-colors">
               Track Parcel
             </Link>
-            <a href="#services" className="hover:text-[#D71920] transition-colors">
+            <Link to="/services" className="hover:text-[#D71920] transition-colors">
               Services
-            </a>
-            <a href="#how-it-works" className="hover:text-[#D71920] transition-colors">
+            </Link>
+            <Link to="/how-it-works" className="hover:text-[#D71920] transition-colors">
               How It Works
-            </a>
+            </Link>
           </nav>
 
           {/* Desktop Auth Actions */}
@@ -56,7 +56,7 @@ export const Navbar = () => {
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
                 <Button variant="secondary" size="sm" onClick={handleDashboardRedirect} icon={User}>
-                  My Dashboard ({user.role})
+                  My Dashboard ({user?.role ? user.role.toUpperCase() : 'PORTAL'})
                 </Button>
                 <Button variant="outline" size="sm" onClick={logout} icon={LogOut}>
                   Logout
@@ -108,13 +108,20 @@ export const Navbar = () => {
           >
             Track Parcel
           </Link>
-          <a
-            href="#services"
+          <Link
+            to="/services"
             onClick={() => setMobileMenuOpen(false)}
             className="block py-2 text-base font-medium text-neutral-800 hover:text-[#D71920]"
           >
             Services
-          </a>
+          </Link>
+          <Link
+            to="/how-it-works"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block py-2 text-base font-medium text-neutral-800 hover:text-[#D71920]"
+          >
+            How It Works
+          </Link>
           <div className="pt-4 border-t border-neutral-100 flex flex-col gap-2.5">
             {isAuthenticated ? (
               <>
