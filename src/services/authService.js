@@ -65,8 +65,8 @@ export const authService = {
     return response.data;
   },
 
-  // Register a new customer
-  register: async ({ name, email, phone, password, address }) => {
+  // Register a new customer, employee, or admin
+  register: async ({ name, email, phone, password, address, role, station, adminCode }) => {
     if (USE_MOCK_API) {
       await delay();
       const { users } = getMockData();
@@ -76,12 +76,13 @@ export const authService = {
       }
 
       const newUser = {
-        _id: `usr_cust_${Date.now()}`,
+        _id: `usr_${Date.now()}`,
         name,
         email,
         phone,
         address: address || '',
-        role: 'customer',
+        role: role || 'customer',
+        station: station || (role === 'employee' ? 'Central Sorting Hub 01' : null),
         status: 'active',
         createdAt: new Date().toISOString(),
       };
@@ -97,7 +98,16 @@ export const authService = {
       };
     }
 
-    const response = await api.post('/auth/register', { name, email, phone, password, address });
+    const response = await api.post('/auth/register', {
+      name,
+      email,
+      phone,
+      password,
+      address,
+      role: role || 'customer',
+      station,
+      adminCode,
+    });
     return response.data;
   },
 

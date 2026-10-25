@@ -142,7 +142,17 @@ export const Sidebar = ({ isOpen, onClose }) => {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold text-white truncate">{user?.name || 'User'}</p>
-              <p className="text-[11px] text-neutral-400 truncate">{user?.email}</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded ${
+                  role === 'admin'
+                    ? 'bg-red-950/80 text-red-400 border border-red-800/60'
+                    : role === 'employee'
+                    ? 'bg-blue-950/80 text-blue-400 border border-blue-800/60'
+                    : 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/60'
+                }`}>
+                  Role: {roleLabels[role] || role}
+                </span>
+              </div>
             </div>
           </div>
           <button

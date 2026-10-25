@@ -1,6 +1,6 @@
 # Post Office Automation System — Backend API Specification & Contract
 
-This document provides the exact contract between the React frontend and the Node.js / Express / MongoDB / Mongoose backend being built by the group.
+This document describes the API contract between the React frontend and the Node.js / Express backend. Supabase PostgreSQL is the configured database; the backend may use its local JSON store only when Supabase credentials are absent.
 
 ---
 
@@ -285,3 +285,5 @@ This document provides the exact contract between the React frontend and the Nod
 * `GET /api/analytics/admin-summary`
 * `GET /api/analytics/customer-summary?customerId=...`
 * `GET /api/analytics/employee-summary?employeeId=...`
+
+The admin summary derives its totals from stored users, parcels, and complaints. Its `weeklyVolume` covers the current Monday-to-Sunday week and counts deliveries on their recorded completion dates; `monthlyVolume` covers the current month and five preceding months, grouping parcel counts and estimated charges by booking date. Calendar-day grouping uses India Standard Time. `deliverySuccessRate` is delivered parcels divided by delivered plus failed parcels; it is not an on-time delivery measure.

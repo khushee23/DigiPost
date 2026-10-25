@@ -1,205 +1,121 @@
+import store from '../services/store.js';
 
-import supabase from "../config/supabase.js";
-import { withClientId } from "../utils/serialize.js";
-import { COMPLAINT_STATUSES } from "../utils/statuses.js";
+const formatComplaint = (c) => {
+  if (!c) return null;
+  return {
+    ...c,
+    _id: c.id || c._id,
+    trackingId: c.trackingId || c.tracking_id,
+    customerId: c.customerId || c.customer,
+    customerName: c.customerName || c.customer_name,
+    customerEmail: c.customerEmail || c.customer_email,
+    resolutionNotes: c.resolutionNotes || c.resolution_notes,
+  };
+};
 
-// Create a complaint
+// POST /complaints
 export const createComplaint = async (req, res) => {
   try {
-    const { parcel_id, trackingId, subject, description, category } = req.body;
-
-    if ((!parcel_id && !trackingId) || !subject || !description) {
+    const { subject, description } = req.body;
+    if (!subject || !description) {
       return res.status(400).json({
-        message: "A parcel (parcel_id or trackingId), subject and description are required",
+        success: false,
+        message: 'Subject and description are required',
       });
     }
 
-    // Find the parcel by id, or by tracking id (the frontend sends trackingId)
-    const parcelQuery = supabase.from("parcels").select("id, sender");
-    const { data: parcel, error: parcelError } = await (parcel_id
-      ? parcelQuery.eq("id", parcel_id)
-      : parcelQuery.eq("tracking_id", trackingId)
-    ).maybeSingle();
-
-    if (parcelError) throw parcelError;
-    if (!parcel) {
-      return res.status(404).json({ message: "Parcel not found" });
-    }
-
-    // FIX: the customer is the logged-in user. The old code trusted customer_id from the
-    // request body, so anyone could file complaints in someone else's name.
-    const isAdmin = req.user.role === "admin";
-    if (!isAdmin && String(parcel.sender) !== String(req.user.id)) {
-      return res.status(403).json({ message: "You can only complain about your own parcels" });
-    }
-    const customer = isAdmin && req.body.customer_id ? req.body.customer_id : req.user.id;
-
-    const { data, error } = await supabase
-      .from("complaints")
-      .insert({
-        customer,
-        parcel: parcel.id,
-        subject,
-        description,
-        category: category || null,
-        status: "OPEN",
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
+    const complaint = await store.addComplaint(req.body, req.user);
 
     return res.status(201).json({
-      message: "Complaint created successfully",
-      data: withClientId(data),
+      success: true,
+      message: 'Complaint submitted successfully',
+      complaint: formatComplaint(complaint),
     });
   } catch (error) {
-    console.error("Error creating complaint:", error);
-
+    console.error('Error creating complaint:', error);
     return res.status(500).json({
-      message: "Internal error while creating complaint",
+      success: false,
+      message: 'Failed to submit complaint',
     });
   }
 };
 
-// Get all complaints (admin)
-export const getComplaints = async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from("complaints")
-      .select("*");
-
-    if (error) throw error;
-
-    return res.status(200).json(data.map(withClientId));
-  } catch (error) {
-    console.error("Error fetching complaints:", error);
-
-    return res.status(500).json({
-      message: "Internal error while fetching complaints",
-    });
-  }
-};
-
-// Get a complaint by ID (admin, or the customer who filed it)
-export const getComplaintById = async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from("complaints")
-      .select("*")
-      .eq("id", req.params.id)
-      .maybeSingle();
-
-    if (error) throw error;
-
-    if (!data) {
-      return res.status(404).json({
-        message: "Complaint not found",
-      });
-    }
-
-    if (req.user.role !== "admin" && String(data.customer) !== String(req.user.id)) {
-      return res.status(403).json({ message: "Access denied" });
-    }
-
-    return res.status(200).json(withClientId(data));
-  } catch (error) {
-    console.error("Error fetching complaint:", error);
-
-    return res.status(500).json({
-      message: "Internal error while fetching complaint",
-    });
-  }
-};
-
-const fetchComplaintsOf = async (customerId) => {
-  const { data, error } = await supabase
-    .from("complaints")
-    .select("*")
-    .eq("customer", customerId);
-  if (error) throw error;
-  return data.map(withClientId);
-};
-
-// Get complaints belonging to a customer (route is guarded by selfOrAdmin)
-export const getCustomerComplaints = async (req, res) => {
-  try {
-    return res.status(200).json(await fetchComplaintsOf(req.params.customerId));
-  } catch (error) {
-    console.error("Error fetching customer complaints:", error);
-
-    return res.status(500).json({
-      message: "Internal error while fetching customer complaints",
-    });
-  }
-};
-
-// Complaints of the logged-in customer (path used by the frontend contract)
+// GET /complaints/my-complaints
 export const getMyComplaints = async (req, res) => {
   try {
-    return res.status(200).json(await fetchComplaintsOf(req.user.id));
-  } catch (error) {
-    console.error("Error fetching my complaints:", error);
+    let customerId = req.query.customerId || req.user?.id;
+    // Security: Customer can only view their own complaints
+    if (req.user?.role === 'customer') {
+      customerId = req.user.id;
+    }
+    const complaints = store.getComplaints({ customerId }).map(formatComplaint);
 
-    return res.status(500).json({
-      message: "Internal error while fetching complaints",
+    return res.status(200).json({
+      success: true,
+      complaints,
+      total: complaints.length,
     });
+  } catch (error) {
+    console.error('Error fetching customer complaints:', error);
+    return res.status(500).json({ success: false, message: 'Failed to load complaints' });
   }
 };
 
-// Update complaint status and resolution (admin)
-export const updateComplaintStatus = async (req, res) => {
+// GET /complaints (Admin)
+export const getComplaints = async (req, res) => {
   try {
-    const { status } = req.body;
-    // The API contract calls it resolutionNotes, the DB column is `resolution`: accept both
-    const resolution = req.body.resolution ?? req.body.resolutionNotes;
-
-    const updates = {};
-
-    if (status !== undefined) {
-      const normalized = String(status).toUpperCase();
-      if (!COMPLAINT_STATUSES.includes(normalized)) {
-        return res.status(400).json({
-          message: `Status must be one of: ${COMPLAINT_STATUSES.join(", ")}`,
-        });
-      }
-      updates.status = normalized;
-    }
-
-    if (resolution !== undefined) {
-      updates.resolution = resolution;
-    }
-
-    if (Object.keys(updates).length === 0) {
-      return res.status(400).json({
-        message: "Provide a status or resolution to update",
-      });
-    }
-
-    const { data, error } = await supabase
-      .from("complaints")
-      .update(updates)
-      .eq("id", req.params.id)
-      .select()
-      .maybeSingle();
-
-    if (error) throw error;
-
-    if (!data) {
-      return res.status(404).json({
-        message: "Complaint not found",
-      });
-    }
+    const complaints = store.getComplaints({
+      status: req.query.status,
+      search: req.query.search,
+    }).map(formatComplaint);
 
     return res.status(200).json({
-      message: "Complaint updated successfully",
-      data: withClientId(data),
+      success: true,
+      complaints,
+      total: complaints.length,
     });
   } catch (error) {
-    console.error("Error updating complaint:", error);
+    console.error('Error fetching complaints:', error);
+    return res.status(500).json({ success: false, message: 'Failed to load complaints' });
+  }
+};
 
-    return res.status(500).json({
-      message: "Internal error while updating complaint",
+// GET /complaints/:id
+export const getComplaintById = async (req, res) => {
+  try {
+    const complaint = store.getComplaintById(req.params.id);
+
+    if (!complaint) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+    if (req.user?.role === 'customer' && complaint.customerId !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'You are not authorized to view this complaint' });
+    }
+
+    return res.status(200).json({ success: true, complaint: formatComplaint(complaint) });
+  } catch (error) {
+    console.error('Error fetching complaint:', error);
+    return res.status(404).json({ success: false, message: 'Complaint not found' });
+  }
+};
+
+// PATCH /complaints/:id/status or PATCH /complaints/:id
+export const updateComplaintStatus = async (req, res) => {
+  try {
+    const { status, resolutionNotes, resolution } = req.body;
+    const updated = await store.updateComplaintStatus(req.params.id, {
+      status,
+      resolutionNotes: resolutionNotes || resolution,
+      adminUser: req.user,
     });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Complaint updated successfully',
+      complaint: formatComplaint(updated),
+    });
+  } catch (error) {
+    console.error('Error updating complaint:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Error updating complaint' });
   }
 };

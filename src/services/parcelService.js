@@ -23,7 +23,7 @@ export const parcelService = {
         heavy: 35,
       };
       const rate = baseRates[parcelData.parcelType] || 15;
-      const weightMultiplier = Math.max(1, Number(parcelData.weight || 1));
+      const weightMultiplier = Math.max(0.5, Number(parcelData.weight || 1));
       const calculatedCost = Number((rate + weightMultiplier * 4.5).toFixed(2));
 
       // Calculate expected delivery date (2 to 4 days)

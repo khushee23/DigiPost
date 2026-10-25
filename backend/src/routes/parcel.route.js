@@ -1,16 +1,40 @@
-import express from 'express'
-import { protectRoute, adminOnly, selfOrAdmin } from '../middlewares/auth.middleware.js'
-import { createParcel, getParcels, getParcelById, updateParcelById, deleteParcel, getBookings, getHistory } from '../controllers/parcel.controller.js'
-const router = express.Router()
+import express from 'express';
+import { protectRoute, adminOnly, customerOnly } from '../middlewares/auth.middleware.js';
+import {
+  createParcel,
+  getMyParcels,
+  getParcels,
+  getParcelById,
+  getTracking,
+  assignParcel,
+  cancelParcel,
+  updateParcelById,
+  deleteParcel,
+  getBookings,
+  getHistory,
+} from '../controllers/parcel.controller.js';
 
-router.post("/parcels",protectRoute,createParcel)
-router.get("/parcels",protectRoute,adminOnly,getParcels)
-// Ownership checks for these three are done inside the controller (admin or the parcel's sender)
-router.get("/parcels/:id",protectRoute,getParcelById)
-router.patch("/parcels/:id",protectRoute,updateParcelById)
-router.delete("/parcels/:id",protectRoute,deleteParcel)
-// A user can only see their own bookings/history (admins can see anyone's)
-router.get("/users/:id/bookings",protectRoute,selfOrAdmin("id"),getBookings)
-router.get("/users/:id/history",protectRoute,selfOrAdmin("id"),getHistory)
+const router = express.Router();
 
-export default router
+// Specific routes first to prevent :id param collisions
+router.post('/parcels', protectRoute, customerOnly, createParcel);
+router.get('/parcels/my', protectRoute, customerOnly, getMyParcels);
+router.get('/parcels/my-parcels', protectRoute, customerOnly, getMyParcels);
+router.get('/parcels', protectRoute, adminOnly, getParcels);
+router.post('/parcels/:parcelId/assign', protectRoute, adminOnly, assignParcel);
+
+// Public Tracking routes
+router.get('/tracking/:trackingId', getTracking);
+router.get('/parcels/track/:trackingId', getTracking);
+
+// ID-parameterized routes
+router.patch('/parcels/:id/cancel', protectRoute, cancelParcel);
+router.get('/parcels/:id', protectRoute, getParcelById);
+router.patch('/parcels/:id', protectRoute, adminOnly, updateParcelById);
+router.delete('/parcels/:id', protectRoute, adminOnly, deleteParcel);
+
+// User legacy aliases
+router.get('/users/:id/bookings', protectRoute, getBookings);
+router.get('/users/:id/history', protectRoute, getHistory);
+
+export default router;

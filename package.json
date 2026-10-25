@@ -10,8 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@rolldown/binding-win32-x64-msvc": "^1.2.13",
     "@tailwindcss/vite": "^4.3.3",
     "axios": "^1.20.0",
+    "lightningcss-win32-x64-msvc": "^1.32.0",
     "lucide-react": "^1.54.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
@@ -25,6 +27,7 @@
     "autoprefixer": "^10.6.1",
     "oxlint": "^1.81.0",
     "postcss": "^8.5.29",
+    "puppeteer-core": "^25.15.0",
     "tailwindcss": "^4.3.3",
     "vite": "^8.3.0"
   }

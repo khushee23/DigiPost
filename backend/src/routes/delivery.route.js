@@ -1,17 +1,28 @@
-import express from 'express'
-import { protectRoute, selfOrAdmin } from '../middlewares/auth.middleware.js'
-import { getDeliveries, getDeliveriesToday, getDeliveryStatus, getDeliveryPriority, getEmployeeHistory, getEmployeePerformance } from '../controllers/delivery.controller.js'
-const router = express.Router()
+import express from 'express';
+import { protectRoute, adminOnly, employeeOnly } from '../middlewares/auth.middleware.js';
+import {
+  getMyDeliveries,
+  getDeliveriesToday,
+  getDeliveries,
+  getDeliveryById,
+  updateDeliveryStatus,
+  reassignDelivery,
+  assignDelivery,
+} from '../controllers/delivery.controller.js';
 
-// :id is the EMPLOYEE id for these routes. An employee sees only their own, admins see anyone's.
-router.get("/deliveries/:id/my",protectRoute,selfOrAdmin("id"),getDeliveries)
-// FIX: this was adminOnly, so the employee it is meant for could never call it
-router.get("/deliveries/:id/today",protectRoute,selfOrAdmin("id"),getDeliveriesToday)
-// :id is the DELIVERY id here (ownership is checked in the controller)
-router.get("/deliveries/:id/status",protectRoute,getDeliveryStatus)
-// FIX: path was misspelled "/prioirty"
-router.get("/deliveries/:id/priority",protectRoute,getDeliveryPriority)
-router.get("/employees/:id/history",protectRoute,selfOrAdmin("id"),getEmployeeHistory)
-router.get("/employees/:id/performance",protectRoute,selfOrAdmin("id"),getEmployeePerformance)
+const router = express.Router();
 
-export default router
+// Specific routes first
+router.get('/deliveries/my', protectRoute, employeeOnly, getMyDeliveries);
+router.get('/deliveries/my-deliveries', protectRoute, employeeOnly, getMyDeliveries);
+router.get('/deliveries/assigned', protectRoute, employeeOnly, getMyDeliveries);
+router.get('/deliveries/today', protectRoute, employeeOnly, getDeliveriesToday);
+router.get('/deliveries', protectRoute, adminOnly, getDeliveries);
+
+// Parameterized routes
+router.get('/deliveries/:id', protectRoute, employeeOnly, getDeliveryById);
+router.patch('/deliveries/:id/status', protectRoute, employeeOnly, updateDeliveryStatus);
+router.post('/deliveries/:id/assign', protectRoute, adminOnly, assignDelivery);
+router.patch('/deliveries/:id/reassign', protectRoute, adminOnly, reassignDelivery);
+
+export default router;

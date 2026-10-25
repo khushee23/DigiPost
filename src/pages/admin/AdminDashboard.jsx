@@ -49,13 +49,17 @@ export const AdminDashboard = () => {
     try {
       setIsLoading(true);
       setError(null);
-      const [statsRes, parcelsRes] = await Promise.all([
+      const results = await Promise.allSettled([
         analyticsService.getAdminStats(),
         parcelService.getAllParcels({ limit: 5 }),
       ]);
 
-      if (statsRes.success) setStats(statsRes.stats);
-      if (parcelsRes.success) setRecentParcels(parcelsRes.parcels.slice(0, 5));
+      if (results[0].status === 'fulfilled' && results[0].value?.success) {
+        setStats(results[0].value.stats);
+      }
+      if (results[1].status === 'fulfilled' && results[1].value?.success) {
+        setRecentParcels((results[1].value.parcels || []).slice(0, 5));
+      }
     } catch (err) {
       console.error(err);
       setError('Unable to load administration dashboard metrics.');
@@ -84,17 +88,23 @@ export const AdminDashboard = () => {
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
-      {/* Admin Command Header */}
+      {/* Admin Command Header with Prominent Role Badge */}
       <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-2xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
-            System Administration
-          </span>
-          <h1 className="text-2xl font-bold text-neutral-900 mt-0.5">
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-red-50 text-[#D71920] border border-red-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#D71920] animate-pulse" />
+              Role: System Administrator (HQ Command)
+            </span>
+            <span className="text-xs text-neutral-400 font-mono">
+              Admin: {user?.name || 'Authorized'}
+            </span>
+          </div>
+          <h1 className="text-2xl font-bold text-neutral-900">
             Postal Operations Command Center
           </h1>
           <p className="text-xs text-neutral-500 mt-1">
-            Real-time oversight of consignments, courier fleets, and customer support.
+            Real-time oversight of consignments, courier fleets, sorting stations, and customer support.
           </p>
         </div>
 
@@ -141,9 +151,9 @@ export const AdminDashboard = () => {
           colorScheme="green"
         />
         <StatCard
-          title="Total Postage Revenue"
+          title="Estimated Postage Charges"
           value={formatCurrency(stats?.totalRevenue ?? 0)}
-          subtitle="Collected freight value"
+          subtitle="Sum of charges on all parcels"
           icon={DollarSign}
           colorScheme="red"
         />

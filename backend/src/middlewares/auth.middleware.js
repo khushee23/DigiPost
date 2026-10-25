@@ -1,49 +1,139 @@
-import jwt from "jsonwebtoken"
+import jwt from "jsonwebtoken";
 
-// Accept the token from "Authorization: Bearer <token>" (what the frontend sends)
-// or from the httpOnly "jwt" cookie.
-const getToken = (req) => {
-    const header = req.headers.authorization
-    if (header && header.startsWith("Bearer ")) {
-        return header.slice(7)
-    }
-    return req.cookies?.jwt || null
-}
-
+/**
+ * protectRoute Middleware
+ * Extracts token from Authorization header (Bearer token) or HTTP cookies.
+ * Verifies JWT and attaches decoded user to req.user.
+ */
 export const protectRoute = (req, res, next) => {
-    const token = getToken(req)
+  try {
+    let token = null;
+
+    // 1. Check Authorization header: "Bearer <token>"
+    if (req.headers.authorization && req.headers.authorization.startsWith("Bearer ")) {
+      token = req.headers.authorization.split(" ")[1];
+    }
+    // 2. Check cookies as fallback
+    else if (req.cookies && req.cookies.jwt) {
+      token = req.cookies.jwt;
+    }
+
     if (!token) {
-        return res.status(401).json({ message: "Unauthorized - No token provided" })
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized: No token provided. Please log in.",
+      });
     }
 
-    try {
-        req.user = jwt.verify(token, process.env.JWT_SECRET)
-        next()
-    } catch (error) {
-        // Bad or expired token is the client's problem (401), not a server error (500)
-        return res.status(401).json({
-            message: error.name === "TokenExpiredError"
-                ? "Session expired, please log in again"
-                : "Unauthorized - Invalid token"
-        })
+    const secret = process.env.JWT_SECRET;
+    if (!secret || secret.length < 32) {
+      throw new Error('JWT_SECRET must be configured with at least 32 characters.');
     }
-}
+    const decoded = jwt.verify(token, secret);
 
-export const adminOnly = (req, res, next) => {
-    if (!req.user || req.user.role !== "admin") {
-        return res.status(403).json({ message: "Access denied" })
+    req.user = decoded; // { id, role, email, iat, exp }
+    next();
+  } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized: Token has expired. Please log in again.",
+      });
     }
-    next()
-}
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized: Invalid authentication token.",
+      });
+    }
+    console.error(`Error in protectRoute middleware: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error during authentication",
+    });
+  }
+};
 
-// Allows the request when the logged-in user is an admin, or when the id in the URL
-// is their own id. Example: selfOrAdmin("customerId") for /customers/:customerId/...
-export const selfOrAdmin = (paramName = "id") => (req, res, next) => {
+/**
+ * Role-based authorization middleware factory
+ * Usage: router.get('/path', protectRoute, authorizeRoles('admin', 'employee'), handler)
+ */
+export const authorizeRoles = (...allowedRoles) => {
+  return (req, res, next) => {
     if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" })
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized: User session not established",
+      });
     }
-    if (req.user.role === "admin" || String(req.user.id) === String(req.params[paramName])) {
-        return next()
+
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: `Access denied: Requires one of [${allowedRoles.join(", ")}] role permissions`,
+      });
     }
-    return res.status(403).json({ message: "Access denied" })
-}
+
+    next();
+  };
+};
+
+/**
+ * adminOnly Middleware
+ */
+export const adminOnly = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized: User not authenticated",
+    });
+  }
+  const role = (req.user.role || '').toString().toLowerCase();
+  if (role !== "admin") {
+    return res.status(403).json({
+      success: false,
+      message: "Access denied: Administrator privileges required",
+    });
+  }
+  next();
+};
+
+/**
+ * employeeOnly Middleware (Admin also permitted)
+ */
+export const employeeOnly = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized: User not authenticated",
+    });
+  }
+  const role = (req.user.role || '').toString().toLowerCase();
+  if (role !== "employee" && role !== "admin") {
+    return res.status(403).json({
+      success: false,
+      message: "Access denied: Employee / Courier privileges required",
+    });
+  }
+  next();
+};
+
+/**
+ * customerOnly Middleware (Admin also permitted)
+ */
+export const customerOnly = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized: User not authenticated",
+    });
+  }
+  const role = (req.user.role || '').toString().toLowerCase();
+  if (role !== "customer" && role !== "admin") {
+    return res.status(403).json({
+      success: false,
+      message: "Access denied: Customer privileges required",
+    });
+  }
+  next();
+};

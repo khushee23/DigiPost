@@ -1,6 +1,7 @@
 import React, { forwardRef } from 'react';
 
 export const Textarea = forwardRef(({
+  id,
   label,
   name,
   value,
@@ -14,16 +15,18 @@ export const Textarea = forwardRef(({
   className = '',
   ...props
 }, ref) => {
+  const inputId = id || name;
+
   return (
     <div className={`w-full ${className}`}>
       {label && (
-        <label htmlFor={name} className="block text-sm font-medium text-neutral-800 mb-1.5">
+        <label htmlFor={inputId} className="block text-sm font-medium text-neutral-800 mb-1.5">
           {label} {required && <span className="text-[#D71920]">*</span>}
         </label>
       )}
       <textarea
         ref={ref}
-        id={name}
+        id={inputId}
         name={name}
         rows={rows}
         value={value}

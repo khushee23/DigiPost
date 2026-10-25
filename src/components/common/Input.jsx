@@ -1,6 +1,7 @@
 import React, { forwardRef } from 'react';
 
 export const Input = forwardRef(({
+  id,
   label,
   name,
   type = 'text',
@@ -14,12 +15,15 @@ export const Input = forwardRef(({
   icon: Icon = null,
   rightElement = null,
   className = '',
+  autoComplete,
   ...props
 }, ref) => {
+  const inputId = id || name;
+
   return (
     <div className={`w-full ${className}`}>
       {label && (
-        <label htmlFor={name} className="block text-sm font-medium text-neutral-800 mb-1.5">
+        <label htmlFor={inputId} className="block text-sm font-medium text-neutral-800 mb-1.5">
           {label} {required && <span className="text-[#D71920]">*</span>}
         </label>
       )}
@@ -31,7 +35,7 @@ export const Input = forwardRef(({
         )}
         <input
           ref={ref}
-          id={name}
+          id={inputId}
           name={name}
           type={type}
           value={value}
@@ -39,6 +43,7 @@ export const Input = forwardRef(({
           placeholder={placeholder}
           disabled={disabled}
           required={required}
+          autoComplete={autoComplete || (type === 'password' ? 'current-password' : name === 'email' ? 'email' : 'on')}
           className={`block w-full rounded-lg border text-sm transition-colors duration-150 py-2.5 
             ${Icon ? 'pl-9' : 'pl-3.5'} 
             ${rightElement ? 'pr-10' : 'pr-3.5'}

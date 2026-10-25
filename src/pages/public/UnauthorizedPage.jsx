@@ -9,8 +9,9 @@ export const UnauthorizedPage = () => {
 
   const getHomePath = () => {
     if (!user) return '/login';
-    if (user.role === 'admin') return '/admin/dashboard';
-    if (user.role === 'employee') return '/employee/dashboard';
+    const role = (user?.role || '').toString().toLowerCase();
+    if (role === 'admin') return '/admin/dashboard';
+    if (role === 'employee') return '/employee/dashboard';
     return '/customer/dashboard';
   };
 

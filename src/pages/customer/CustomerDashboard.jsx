@@ -30,18 +30,23 @@ export const CustomerDashboard = () => {
   const [error, setError] = useState(null);
 
   const loadData = async () => {
-    if (!user?._id) return;
+    const customerId = user?._id || user?.id;
+    if (!customerId) return;
     try {
       setIsLoading(true);
       setError(null);
 
-      const [statsRes, parcelsRes] = await Promise.all([
-        analyticsService.getCustomerStats(user._id),
-        parcelService.getCustomerParcels(user._id, { limit: 5 }),
+      const results = await Promise.allSettled([
+        analyticsService.getCustomerStats(customerId),
+        parcelService.getCustomerParcels(customerId, { limit: 5 }),
       ]);
 
-      if (statsRes.success) setStats(statsRes.stats);
-      if (parcelsRes.success) setRecentParcels(parcelsRes.parcels.slice(0, 5));
+      if (results[0].status === 'fulfilled' && results[0].value?.success) {
+        setStats(results[0].value.stats);
+      }
+      if (results[1].status === 'fulfilled' && results[1].value?.success) {
+        setRecentParcels((results[1].value.parcels || []).slice(0, 5));
+      }
     } catch (err) {
       console.error(err);
       setError('Unable to load customer dashboard data.');
@@ -52,7 +57,7 @@ export const CustomerDashboard = () => {
 
   useEffect(() => {
     loadData();
-  }, [user?._id]);
+  }, [user?._id, user?.id]);
 
   if (isLoading) {
     return (
@@ -70,17 +75,23 @@ export const CustomerDashboard = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Greeting and Quick Actions Header */}
+      {/* Greeting and Quick Actions Header with Prominent Role Badge */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-neutral-200 shadow-2xs">
         <div>
-          <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
-            Customer Dashboard
-          </span>
-          <h1 className="text-2xl font-bold text-neutral-900 mt-0.5">
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Role: Customer Portal
+            </span>
+            <span className="text-xs text-neutral-400 font-mono">
+              ID: {user?._id || user?.id || 'Active'}
+            </span>
+          </div>
+          <h1 className="text-2xl font-bold text-neutral-900">
             Welcome back, {user?.name || 'Customer'}
           </h1>
           <p className="text-xs text-neutral-500 mt-1">
-            Track your dispatches and book new consignments with ease.
+            Track your personal dispatches, view invoices, and book consignments.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2.5">

@@ -14,13 +14,14 @@ export const NotificationDropdown = () => {
   const dropdownRef = useRef(null);
 
   const fetchNotifications = async () => {
-    if (!user?._id) return;
+    const userId = user?._id || user?.id;
+    if (!userId) return;
     try {
       setIsLoading(true);
-      const res = await notificationService.getNotifications(user._id);
+      const res = await notificationService.getNotifications(userId);
       if (res.success) {
-        setNotifications(res.notifications);
-        setUnreadCount(res.unreadCount);
+        setNotifications(res.notifications || []);
+        setUnreadCount(res.unreadCount || 0);
       }
     } catch (err) {
       console.error('Failed to load notifications:', err);
@@ -31,7 +32,7 @@ export const NotificationDropdown = () => {
 
   useEffect(() => {
     fetchNotifications();
-  }, [user?._id]);
+  }, [user?._id, user?.id]);
 
   // Click outside to close
   useEffect(() => {
