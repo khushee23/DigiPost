@@ -115,14 +115,14 @@ async function runTests() {
 
     const adminLogin = await request('POST', '/auth/login', {
       email: 'admin@postoffice.gov',
-      password: 'admin123',
+      password: 'DigiPostAdmin@2026',
     });
     assert(adminLogin.status === 200 && adminLogin.data.user?.role === 'admin', 'Admin Login with Seed Credentials', `Status: ${adminLogin.status}`);
     const adminToken = adminLogin.data.token;
 
     const empLogin = await request('POST', '/auth/login', {
       email: 'employee@postoffice.gov',
-      password: 'employee123',
+      password: 'DigiPostCourier@2026',
     });
     assert(empLogin.status === 200 && empLogin.data.user?.role === 'employee', 'Employee Login with Seed Credentials', `Status: ${empLogin.status}`);
     const employeeToken = empLogin.data.token;

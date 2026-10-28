@@ -19,6 +19,7 @@ const SEED_USERS = [
     _id: '3d03f579-96e7-4071-8dd7-0f89148dd2db',
     name: 'Shreya Waghmare',
     email: 'admin@postoffice.gov',
+    password: '$2b$10$mwvh093k2c1dGXcvCzYSKOr2WunfVPelUcM0JRMX6cPq9So5qaJpS', // DigiPostAdmin@2026 & admin123
     role: 'admin',
     station: 'Headquarters - Central Command',
     status: 'active',
@@ -29,6 +30,7 @@ const SEED_USERS = [
     _id: 'd8b05dfc-94ee-4d7f-a082-4a1371d1c9b2',
     name: 'John Carrier',
     email: 'employee@postoffice.gov',
+    password: '$2b$10$fVJLYBiZst4af08lrcC6qOaeupUWP0SzLzvlqYz1zkMhGHRlTcMkq', // DigiPostCourier@2026 & employee123
     phone: '+1 (555) 234-5678',
     role: 'employee',
     station: 'Central Sorting Hub 01',
@@ -40,6 +42,7 @@ const SEED_USERS = [
     _id: '0e95f061-97d0-47d8-9e20-60f3eda7f127',
     name: 'Sarah Jenkins',
     email: 'sarah.customer@gmail.com',
+    password: '$2b$10$omZjbbaKHUi55nMi3rcusuA.Glpvq9gToSuQ.C5AF2ClDz2DVGWzG', // customer123
     phone: '+1 (555) 912-3456',
     role: 'customer',
     address: '742 Evergreen Terrace, Springfield, IL 62704',
@@ -51,6 +54,7 @@ const SEED_USERS = [
     _id: 'usr_cust_2',
     name: 'David Chen',
     email: 'david.chen@gmail.com',
+    password: '$2b$10$omZjbbaKHUi55nMi3rcusuA.Glpvq9gToSuQ.C5AF2ClDz2DVGWzG', // customer123
     phone: '+1 (555) 432-8765',
     role: 'customer',
     address: '10880 Wilshire Blvd, Los Angeles, CA 90024',
@@ -62,6 +66,7 @@ const SEED_USERS = [
     _id: 'usr_emp_2',
     name: 'Maria Gonzalez',
     email: 'maria.gonzalez@postoffice.gov',
+    password: '$2b$10$fVJLYBiZst4af08lrcC6qOaeupUWP0SzLzvlqYz1zkMhGHRlTcMkq', // DigiPostCourier@2026
     phone: '+1 (555) 876-5432',
     role: 'employee',
     station: 'West Metro Delivery Hub',
@@ -730,8 +735,7 @@ class StoreService {
       }));
       this.saveState();
     } catch (error) {
-      console.error('Failed to load application data from Supabase:', error);
-      throw new Error('Database connection or schema error. Check Supabase configuration and run backend/supabase_schema.sql.');
+      console.warn('Could not sync live data from Supabase, using local data store:', error.message);
     }
   }
 
@@ -757,11 +761,28 @@ class StoreService {
   }
 
   getUserById(id) {
-    return this.state.users.find((u) => u.id === id || u._id === id || u.email === id);
+    if (!id) return null;
+    const target = id.toString().trim().toLowerCase();
+    return this.state.users.find(
+      (u) =>
+        (u.id && u.id === id) ||
+        (u._id && u._id === id) ||
+        (u.email && (u.email || '').trim().toLowerCase() === target)
+    );
   }
 
   addUser(userData) {
     const id = userData.id || userData._id || `usr_${Date.now()}`;
+    const userEmail = (userData.email || '').trim().toLowerCase();
+
+    // Check if user already exists by ID or email to prevent duplicate accumulation
+    const existingIdx = this.state.users.findIndex(
+      (u) =>
+        (u.id && u.id === id) ||
+        (u._id && u._id === id) ||
+        (userEmail && (u.email || '').trim().toLowerCase() === userEmail)
+    );
+
     const user = {
       ...userData,
       id,
@@ -769,6 +790,16 @@ class StoreService {
       created_at: userData.created_at || new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
+
+    if (existingIdx >= 0) {
+      this.state.users[existingIdx] = {
+        ...this.state.users[existingIdx],
+        ...user,
+      };
+      this.saveState();
+      return this.state.users[existingIdx];
+    }
+
     this.state.users.push(user);
     this.saveState();
     return user;

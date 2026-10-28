@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Package,
   Mail,
@@ -36,7 +36,7 @@ const ROLE_PRESETS = {
     badge: 'Courier / Field Staff',
     destination: '/employee/dashboard',
     defaultEmail: 'employee@postoffice.gov',
-    defaultPassword: 'employee123',
+    defaultPassword: 'DigiPostCourier@2026',
     icon: Truck,
     colorClass: 'blue',
     description: 'Access assigned delivery routes, log doorstep checkpoints & update package status',
@@ -47,7 +47,7 @@ const ROLE_PRESETS = {
     badge: 'Operations HQ Command',
     destination: '/admin/dashboard',
     defaultEmail: 'admin@postoffice.gov',
-    defaultPassword: 'admin123',
+    defaultPassword: 'DigiPostAdmin@2026',
     icon: Shield,
     colorClass: 'red',
     description: 'System oversight, manage customer & staff records, allocate delivery fleets & analytics',
@@ -55,9 +55,9 @@ const ROLE_PRESETS = {
 };
 
 export const LoginPage = () => {
-  const [selectedRole, setSelectedRole] = useState('employee');
-  const [email, setEmail] = useState('employee@postoffice.gov');
-  const [password, setPassword] = useState('employee123');
+  const [selectedRole, setSelectedRole] = useState('customer');
+  const [email, setEmail] = useState('sarah.customer@gmail.com');
+  const [password, setPassword] = useState('customer123');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -65,10 +65,10 @@ export const LoginPage = () => {
 
   const { login, user, isAuthenticated } = useAuth();
   const { success, error } = useToast();
-  const navigate = useNavigate();
   const location = useLocation();
+  const navigate = useNavigate();
 
-  // If already authenticated with valid user, redirect directly to role dashboard
+  // If already authenticated with a valid session, navigate straight to role dashboard
   useEffect(() => {
     try {
       const storedToken = localStorage.getItem('poas_auth_token');
@@ -128,26 +128,12 @@ export const LoginPage = () => {
       const res = await login(targetEmail, targetPassword);
       const effectiveRole = (res.user?.role || overrideRole || selectedRole || 'customer')
         .toString()
+        .trim()
         .toLowerCase();
-
-      const destination =
-        effectiveRole === 'admin'
-          ? '/admin/dashboard'
-          : effectiveRole === 'employee'
-          ? '/employee/dashboard'
-          : '/customer/dashboard';
+      const destination = ROLE_PRESETS[effectiveRole]?.destination || ROLE_PRESETS.customer.destination;
 
       success(`Welcome back, ${res.user?.name || 'User'}! (${effectiveRole.toUpperCase()})`);
-
-      // React Router SPA navigation to dashboard
       navigate(destination, { replace: true });
-
-      // Fallback: If route has not transitioned, enforce hard navigation to destination
-      setTimeout(() => {
-        if (window.location.pathname === '/login' || window.location.pathname === '/login/') {
-          window.location.href = destination;
-        }
-      }, 250);
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Failed to sign in. Please verify credentials.';
       setErrorMessage(msg);
@@ -159,10 +145,7 @@ export const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const form = e.currentTarget;
-    const formEmail = form.elements?.email?.value;
-    const formPassword = form.elements?.password?.value;
-    await performLogin(formEmail || email, formPassword || password);
+    await performLogin(email, password);
   };
 
   const currentPreset = ROLE_PRESETS[selectedRole] || ROLE_PRESETS.customer;

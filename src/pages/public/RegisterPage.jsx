@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Package,
@@ -8,9 +8,9 @@ import {
   Phone,
   MapPin,
   ArrowRight,
-  Shield,
-  Truck,
-  Building2,
+  Eye,
+  EyeOff,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -23,31 +23,72 @@ export const RegisterPage = () => {
     email: '',
     phone: '',
     address: '',
-    station: '',
-    role: 'customer',
     password: '',
     confirmPassword: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const { register } = useAuth();
+  const { register, user, isAuthenticated } = useAuth();
   const { success, error } = useToast();
   const navigate = useNavigate();
+
+  // If already authenticated with valid user, redirect directly to role dashboard
+  useEffect(() => {
+    try {
+      const storedToken = localStorage.getItem('poas_auth_token');
+      const storedUser = localStorage.getItem('poas_auth_user');
+      const activeUser = user || (storedUser ? JSON.parse(storedUser) : null);
+
+      if ((isAuthenticated && activeUser) || (storedToken && activeUser)) {
+        const role = (activeUser.role || '').toString().toLowerCase();
+        const destination =
+          role === 'admin'
+            ? '/admin/dashboard'
+            : role === 'employee'
+            ? '/employee/dashboard'
+            : '/customer/dashboard';
+        navigate(destination, { replace: true });
+      }
+    } catch {}
+  }, [isAuthenticated, user, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errorMessage) setErrorMessage('');
   };
 
-  const handleRoleSelect = (selectedRole) => {
-    setFormData((prev) => ({ ...prev, role: selectedRole }));
+  const handleFillSample = () => {
+    const randomSuffix = Math.floor(100 + Math.random() * 900);
+    setFormData({
+      name: 'Aarav Patel',
+      email: `customer${randomSuffix}@postoffice.gov`,
+      phone: '+91 98765 43210',
+      address: '100 Marine Drive, Nariman Point, Mumbai 400021',
+      password: 'customer123',
+      confirmPassword: 'customer123',
+    });
+    setAgreeTerms(true);
+    setErrorMessage('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
+
+    if (!formData.name.trim()) {
+      setErrorMessage('Full name is required.');
+      return;
+    }
+
+    if (!formData.email.trim()) {
+      setErrorMessage('Email address is required.');
+      return;
+    }
 
     if (formData.password.length < 6) {
       setErrorMessage('Password must be at least 6 characters in length.');
@@ -60,30 +101,22 @@ export const RegisterPage = () => {
     }
 
     if (!agreeTerms) {
-      setErrorMessage('You must agree to the Terms of Postal Service.');
+      setErrorMessage('Please agree to the Post Office Terms of Service.');
       return;
     }
 
     try {
       setIsLoading(true);
       const res = await register({
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.role === 'customer' ? formData.address : undefined,
-        station: formData.role !== 'customer' ? formData.station || (formData.role === 'admin' ? 'Headquarters Command' : 'Central Sorting Hub 01') : undefined,
-        role: formData.role,
-        adminCode: formData.role === 'admin' ? 'admin123' : undefined,
+        name: formData.name.trim(),
+        email: formData.email.trim().toLowerCase(),
+        phone: formData.phone.trim(),
+        address: formData.address.trim(),
         password: formData.password,
       });
 
-      const registeredRole = (res.user?.role || formData.role || 'customer').toString().toLowerCase();
-      const destination =
-        registeredRole === 'admin'
-          ? '/admin/dashboard'
-          : registeredRole === 'employee'
-          ? '/employee/dashboard'
-          : '/customer/dashboard';
+      const registeredRole = (res.user?.role || 'customer').toString().toLowerCase();
+      const destination = '/customer/dashboard';
 
       success(`Account created successfully as ${registeredRole.toUpperCase()}! Welcome to the Postal Portal.`);
       navigate(destination, { replace: true });
@@ -105,78 +138,25 @@ export const RegisterPage = () => {
           </div>
         </div>
         <h2 className="mt-4 text-center text-2xl sm:text-3xl font-extrabold text-[#111111] tracking-tight">
-          Create Portal Account
+          Create Customer Account
         </h2>
         <p className="mt-1 text-center text-xs text-neutral-500">
-          Sign up with your role: Customer, Postal Employee, or Administrator
+          Create an account to book and track consignments online.
         </p>
       </div>
 
       <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-lg px-4 sm:px-0">
         <div className="bg-white py-8 px-6 sm:px-10 shadow-lg rounded-2xl border border-neutral-200">
-          {/* ROLE SELECTOR */}
-          <div className="mb-6">
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-500 mb-2">
-              Choose Account Role:
-            </label>
-            <div className="grid grid-cols-3 gap-2 p-1 bg-neutral-100 rounded-xl border border-neutral-200">
-              <button
-                type="button"
-                onClick={() => handleRoleSelect('customer')}
-                className={`py-2 px-2 rounded-lg text-xs font-semibold flex flex-col items-center gap-1 transition-all ${
-                  formData.role === 'customer'
-                    ? 'bg-white text-emerald-700 shadow-sm border border-emerald-200 font-bold'
-                    : 'text-neutral-500 hover:text-neutral-900'
-                }`}
-              >
-                <User className="w-4 h-4 text-emerald-600" />
-                <span>Customer</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleRoleSelect('employee')}
-                className={`py-2 px-2 rounded-lg text-xs font-semibold flex flex-col items-center gap-1 transition-all ${
-                  formData.role === 'employee'
-                    ? 'bg-white text-blue-700 shadow-sm border border-blue-200 font-bold'
-                    : 'text-neutral-500 hover:text-neutral-900'
-                }`}
-              >
-                <Truck className="w-4 h-4 text-blue-600" />
-                <span>Employee</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleRoleSelect('admin')}
-                className={`py-2 px-2 rounded-lg text-xs font-semibold flex flex-col items-center gap-1 transition-all ${
-                  formData.role === 'admin'
-                    ? 'bg-white text-red-700 shadow-sm border border-red-200 font-bold'
-                    : 'text-neutral-500 hover:text-neutral-900'
-                }`}
-              >
-                <Shield className="w-4 h-4 text-[#D71920]" />
-                <span>Admin</span>
-              </button>
-            </div>
-
-            <div className="mt-2.5 text-[11px] text-neutral-500 px-1">
-              {formData.role === 'customer' && (
-                <span className="text-emerald-700 font-medium">
-                  &bull; Registered as Customer &rarr; Directs to <strong>Customer Dashboard</strong>
-                </span>
-              )}
-              {formData.role === 'employee' && (
-                <span className="text-blue-700 font-medium">
-                  &bull; Registered as Field Courier &rarr; Directs to <strong>Employee Delivery Desk</strong>
-                </span>
-              )}
-              {formData.role === 'admin' && (
-                <span className="text-red-700 font-medium">
-                  &bull; Registered as Operations Admin &rarr; Directs to <strong>Admin Command Center</strong>
-                </span>
-              )}
-            </div>
+          <div className="mb-5 flex items-center justify-between rounded-xl border border-blue-100 bg-blue-50/80 px-4 py-3 text-xs leading-relaxed text-blue-900">
+            <span>Customer registration portal. Courier & Admin accounts are managed via HQ.</span>
+            <button
+              type="button"
+              onClick={handleFillSample}
+              className="ml-2 inline-flex items-center gap-1 font-semibold text-[#D71920] hover:underline shrink-0"
+              title="Auto-fill sample valid customer registration"
+            >
+              <Sparkles className="w-3.5 h-3.5" /> Demo Fill
+            </button>
           </div>
 
           {errorMessage && (
@@ -187,9 +167,10 @@ export const RegisterPage = () => {
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <Input
+              id="register-name-input"
               label="Full Name"
               name="name"
-              placeholder={formData.role === 'employee' ? 'e.g. John Carrier' : formData.role === 'admin' ? 'e.g. Victoria Stirling' : 'e.g. Sarah Jenkins'}
+              placeholder="e.g. Asha Sharma"
               value={formData.name}
               onChange={handleChange}
               icon={User}
@@ -197,10 +178,11 @@ export const RegisterPage = () => {
             />
 
             <Input
+              id="register-email-input"
               label="Email Address"
               name="email"
               type="email"
-              placeholder={formData.role === 'employee' ? 'courier@postoffice.gov' : formData.role === 'admin' ? 'admin.ops@postoffice.gov' : 'customer@example.com'}
+              placeholder="you@example.com"
               value={formData.email}
               onChange={handleChange}
               icon={Mail}
@@ -208,78 +190,95 @@ export const RegisterPage = () => {
             />
 
             <Input
+              id="register-phone-input"
               label="Phone Number"
               name="phone"
               type="tel"
-              placeholder="+1 (555) 012-3456"
+              placeholder="+91 98765 43210"
               value={formData.phone}
               onChange={handleChange}
               icon={Phone}
               required
             />
 
-            {formData.role === 'customer' ? (
-              <Input
-                label="Default Street Address"
-                name="address"
-                placeholder="742 Evergreen Terrace, Springfield, IL"
-                value={formData.address}
-                onChange={handleChange}
-                icon={MapPin}
-                required
-              />
-            ) : (
-              <Input
-                label={formData.role === 'admin' ? 'Administrative Branch / Headquarters' : 'Assigned Sorting Hub / Station'}
-                name="station"
-                placeholder={formData.role === 'admin' ? 'Headquarters Command - Central Office' : 'Central Sorting Hub 01'}
-                value={formData.station}
-                onChange={handleChange}
-                icon={Building2}
-              />
-            )}
+            <Input
+              id="register-address-input"
+              label="Default Street Address"
+              name="address"
+              placeholder="Fort Area, Mumbai, Maharashtra 400001"
+              value={formData.address}
+              onChange={handleChange}
+              icon={MapPin}
+              required
+            />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Input
+                id="register-password-input"
                 label="Password"
                 name="password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 value={formData.password}
                 onChange={handleChange}
                 icon={Lock}
                 required
+                rightElement={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-neutral-400 hover:text-neutral-600 focus:outline-none"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                }
               />
 
               <Input
+                id="register-confirm-password-input"
                 label="Confirm Password"
                 name="confirmPassword"
-                type="password"
+                type={showConfirmPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 icon={Lock}
                 required
+                rightElement={
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="text-neutral-400 hover:text-neutral-600 focus:outline-none"
+                    aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                }
               />
             </div>
 
             <div className="pt-2">
-              <label htmlFor="agree-terms-checkbox" className="flex items-start text-xs text-neutral-600 cursor-pointer">
+              <label htmlFor="agree-terms-checkbox" className="flex items-start text-xs text-neutral-600 cursor-pointer select-none">
                 <input
                   id="agree-terms-checkbox"
                   name="agreeTerms"
                   type="checkbox"
                   checked={agreeTerms}
-                  onChange={(e) => setAgreeTerms(e.target.checked)}
+                  onChange={(e) => {
+                    setAgreeTerms(e.target.checked);
+                    if (errorMessage) setErrorMessage('');
+                  }}
                   className="w-4 h-4 mt-0.5 rounded text-[#D71920] border-neutral-300 focus:ring-[#D71920]"
                 />
                 <span className="ml-2.5 leading-normal">
-                  I agree to the Post Office Terms of Service and role security guidelines.
+                  I agree to the Post Office Terms of Service and data protection policies.
                 </span>
               </label>
             </div>
 
             <Button
+              id="register-submit-btn"
               type="submit"
               variant="primary"
               size="md"
@@ -288,7 +287,7 @@ export const RegisterPage = () => {
               icon={ArrowRight}
               iconPosition="right"
             >
-              Register as {formData.role.charAt(0).toUpperCase() + formData.role.slice(1)}
+              Create Customer Account
             </Button>
           </form>
 

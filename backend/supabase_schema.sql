@@ -276,8 +276,8 @@ GRANT ALL ON TABLE public.users, public.parcels, public.deliveries, public.compl
 -- ==============================================================================
 -- 8. SEED INITIAL USERS
 -- Passwords:
---   * admin@postoffice.gov       => admin123
---   * employee@postoffice.gov    => employee123
+--   * admin@postoffice.gov       => DigiPostAdmin@2026
+--   * employee@postoffice.gov    => DigiPostCourier@2026
 --   * sarah.customer@gmail.com   => customer123
 -- ==============================================================================
 
@@ -286,7 +286,7 @@ VALUES
 (
     'Victoria Stirling',
     'admin@postoffice.gov',
-    '$2b$10$FZy77G3Dbn91KaeiDCqcxe8DDPXtcKdaepTQIue6zgLRAiPlq/y36',
+    '$2b$10$mwvh093k2c1dGXcvCzYSKOr2WunfVPelUcM0JRMX6cPq9So5qaJpS',
     '+1 (555) 019-2831',
     'Postal HQ Command, 100 Federal Plaza',
     'admin',
@@ -296,7 +296,7 @@ VALUES
 (
     'John Carrier',
     'employee@postoffice.gov',
-    '$2b$10$AzgPgOJYzcGBL4OyPJia2eAxyDQqwzMRjq6QJ8oQQC2Ax0nwSF1Kq',
+    '$2b$10$fVJLYBiZst4af08lrcC6qOaeupUWP0SzLzvlqYz1zkMhGHRlTcMkq',
     '+1 (555) 234-5678',
     'Distribution Branch 01',
     'employee',
@@ -315,6 +315,7 @@ VALUES
 )
 ON CONFLICT (email) 
 DO UPDATE SET 
+    password = EXCLUDED.password,
     role = EXCLUDED.role,
     station = EXCLUDED.station,
     status = EXCLUDED.status;

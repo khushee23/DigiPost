@@ -125,11 +125,13 @@ Pre-seeded accounts are provided for immediate testing and presentation:
 
 | Role | Email | Password | Access Details |
 |---|---|---|---|
-| **Administrator** | `admin@postoffice.gov` | `admin123` | Root administrator (`/admin/*`) |
-| **Postal Employee** | `employee@postoffice.gov`<br>*(or `john.carrier@postoffice.gov`)* | `employee123` | Central Hub 01 Courier (`/employee/*`) |
+| **Administrator** | `admin@postoffice.gov` | `DigiPostAdmin@2026` | Root administrator (`/admin/*`) |
+| **Postal Employee** | `employee@postoffice.gov` | `DigiPostCourier@2026` | Central Hub 01 Courier (`/employee/*`) |
 | **Customer** | `sarah.customer@gmail.com` | `customer123` | Active customer with consignments (`/customer/*`) |
 
-> *Tip: The Login page features 1-click demo filler buttons for instant role switching during presentations.*
+> *Tip: Select the matching role on the Login page; the demo email and password will be filled in automatically.*
+
+For an existing Supabase project, run `backend/reset_standard_demo_credentials.sql` once in the Supabase SQL Editor to reset the administrator and employee passwords. The updated credentials are also applied when the standard demo users are seeded by `backend/supabase_schema.sql`.
 
 ### India-focused Supabase demo data (optional)
 
